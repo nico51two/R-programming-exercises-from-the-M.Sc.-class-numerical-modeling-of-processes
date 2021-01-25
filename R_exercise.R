@@ -53,6 +53,22 @@ mean(h)
 
 # Meh.
 
+# or using MASS pkg (thanks Nora)
+
+library(MASS)
+
+i <- mvrnorm(n=5, mu=50, Sigma = 15**2, empirical = TRUE)
+
+
+sd(i)
+mean(i) # that seems to work best...
+# apparently the difference with MASS::mvrnorm compared to base rnorm() is that
+# mvrnorm has the empirical argrument where you can specify if mean and sd are 
+# mean and sd in the sample drawn via n = ... or if FALSE they are mean and sd 
+# from the POPULATION where the sample is drawn FROM.
+
+?mvrnorm
+
 # 6.create a vector with 6 integer numbers
 
 v_6 <- sample(6)
@@ -107,7 +123,7 @@ bhd_2 <- ifelse(bhd>50, yes=bhd*1.2, no=bhd)
 
 bhd_2/bhd
 
-# 15.do the same process by using a for-loop and  if â else branching
+# 15.do the same process by using a for-loop and  if else else branching
 
 bhd_3 <- bhd
 
