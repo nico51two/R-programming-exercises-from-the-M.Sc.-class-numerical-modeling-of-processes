@@ -60,7 +60,7 @@ v_6 <- sample(6)
 
 # 7.remove the 6th entry of the vector
 
-v_6 <- victor[-6]
+v_6 <- v_6[-6]
 
 # 8.put together the vectors 1, 2, and 5 into a data frame with meaningful
 # column names
@@ -107,7 +107,7 @@ bhd_2 <- ifelse(bhd>50, yes=bhd*1.2, no=bhd)
 
 bhd_2/bhd
 
-# 15.do the same process by using a for-loop and  if – else branching
+# 15.do the same process by using a for-loop and  if â else branching
 
 bhd_3 <- bhd
 
