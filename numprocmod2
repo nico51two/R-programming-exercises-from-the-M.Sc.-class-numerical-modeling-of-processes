@@ -1,0 +1,103 @@
+SolubilityTemp_CSV <- read_csv("C:/Users/Nico/Desktop/SolubilityTemp_CSV.csv")
+
+# [CO2] is in mmol/mol
+
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+
+#import data
+SolubTemp <- read.csv("C:/Users/Nico/Desktop/SolubilityTemp_CSV.csv", header = T)
+
+SolubTemp %>% 
+  ggplot()+
+  geom_line(aes(x=t_in_k,y=X5))+
+  geom_line(aes(x=t_in_k,y=X20))
+
+#plot all lines at once
+#first bring the table in tidy form
+CO2tidy2<-
+  SolubTemp %>% 
+  pivot_longer(.,cols=2:8,names_to="PCO2",values_to="CO2conc") %>% 
+  mutate(.,PCO2=as.numeric(sub(".","",PCO2))) %>% #make a value of the partial-pressure variable
+  rename(.,Tcels=t_in_k) %>% 
+  arrange(.,PCO2,Tcels) %>% #actually: temperature was in Celsius, not K!
+  mutate(.,CO2mmol_liter=CO2conc*55.5) %>% #convert to mmol per liter
+  mutate(.,CO2mol=CO2mmol_liter/1000) %>% # convert to mol
+  mutate(.,CO2mol_kpa=log10(CO2mol*(1/PCO2))) # convert to log10(mol/L*kPa)
+  # is this now equal to Henrys constant?
+
+# polynomial regression in R: lm(y~ x + I(x^2) + I(x^3)) (3 is degree of polynomial
+attach(CO2tidy2)
+
+mod <- lm(CO2mol_kpa~Tcels+I(Tcels^2)+ I(Tcels^3))
+# mod2 <- lm(CO2mol_kpa~Tcels)
+
+plot(mod)
+summary(mod)
+
+plot(CO2tidy2$CO2mol_kpa~CO2tidy2$Tcels, type="p", xlim = c(0,30),
+     xlab="")
+
+abline(lm(CO2mol_kpa~Tcels+I(Tcels^2)+ I(Tcels^3)))
+
+abline(v=20,col="red")
+
+abline(h=-3.410609, col="green")
+
+temps2 <- c(2,5,10,15,20,25,30,35)
+
+
+mod_out <- predict(mod, newdata = data.frame("Tcels"=temps2))
+
+mod_out <- predict(mod, newdata = data.frame("Tcels"=20))
+
+abline(h=mod_out, col="darkgreen")
+
+points(temps2,mod_out, col="purple")
+
+barplot(mod_out~temps2)
+
+
+CO2tidy3<-
+  SolubTemp %>% 
+  pivot_longer(.,cols=2:8,names_to="PCO2",values_to="CO2conc") %>% 
+  mutate(.,PCO2=as.numeric(sub(".","",PCO2))) %>% #make a value of the partial-pressure variable
+  rename(.,Tcels=t_in_k) %>% 
+  arrange(.,PCO2,Tcels) %>% #actually: temperature was in Celsius, not K!
+  mutate(.,CO2mmol_liter=CO2conc*55.5) %>%
+  mutate(.,FANTASY=CO2mmol_liter*46) %>% # convert to mg
+ # mutate(.,CO2mol=CO2mmol_liter/1000) %>% # convert to mol
+  mutate(.,CO2m3=log10(CO2mol*(1/PCO2))) # convert to kg co2/m3
+
+
+# normal pressure 101.3 kPa, ambient partial pressure of CO2 0.039 kPa
+
+# mg/L/kPa 
+
+test <- (CO2tidy3$FANTASY)*0.04
+
+
+
+
+
+mod3 <- lm()
+
+
+
+
+
+
+
+
+
+       ggplot()+
+  geom_point(data = CO2tidy2, aes(Tcels,CO2mol_kpa))+
+  geom_smooth(method = "lm")
+  
+  
+CO2tidy %>% 
+  ggplot(.) +
+  geom_line(aes(x=Tcels,y=CO2mmol_liter,color=as.factor(PCO2)))
+
+
