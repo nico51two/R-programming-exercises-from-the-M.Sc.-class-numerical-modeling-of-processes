@@ -100,4 +100,12 @@ CO2tidy %>%
   ggplot(.) +
   geom_line(aes(x=Tcels,y=CO2mmol_liter,color=as.factor(PCO2)))
 
-
+## Task 9 create a function (Hopefully that is right)
+calc_CO2 <- function(pressure, temperature = 20) {
+  return(10 ^ (-3.128 + temperature * -1.570e-2)#-3.128 is 
+         #the intercept from the model and -1.570e-2 is the parameter
+         #from x^1
+         * 46 * pressure * 1000)
+}
+##Task 8 create the barplot (Hopefully that
+barplot( calc_CO2(pressure = 0.04, temperature = temps2) ~ temps2)
