@@ -1,0 +1,115 @@
+
+
+
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+
+#exercise 1 thursday
+khCaroll <- function(Tx) { #udf from  the article of caroll 
+  Tkelv<- Tx + 273.15 #caroll needs Kelvin
+  #caroll yields the natural logarithm of volatility in Mpa per molar fraction 
+  lnH<- -6.8346 + 1.2817E4/Tkelv - 3.7668E6/Tkelv^2 +  2.997E8 /Tkelv^3
+  #we need as output the solubility in mol/l /kPa
+  return(log10(1/exp(lnH)/1000*55.5)) #solubility form, kPa, mol/l 
+}
+
+#polynomial from the Lide (handbook of chemistry) from the scriptum
+#Henry constant
+khLide<- function(Tx=25) {
+  return(-3.12-0.016*Tx + 0.000084 * Tx*Tx)
+}
+
+#compare both functions 
+carollcomp<- bind_rows(tibble(Temp=seq(0,130,by=0.5),type="Caroll",kh=khCaroll(Temp)),
+                       tibble(Temp=seq(0,130,by=0.5),type=" LidePoly",kh=khLide(Temp)))
+
+
+carollcomp %>% 
+  ggplot(.)+
+  geom_line(aes(x=Temp,y=kh,color=type,lty=type))+
+  scale_x_continuous(name="Temperature/°C")+
+  scale_y_continuous(name="Henry-Constant /mol l-1 kPa-1")+
+  theme_bw()
+
+
+fH2CO3 <- function(pCO2,Tx) {
+  return(10^khLide(Tx)*pCO2)
+}
+
+f_H2CO3 <- function(Tx,PCO2)(10**(khLide(Tx))*PCO2)
+
+
+
+fCO3 <- function(pCO2, Tx, H){
+  return((10^(-16.69+khLide(Tx))*pCO2/(H^2))
+         
+  } 
+# khLide can be replaced as well by a function fkH
+
+#########################
+#Task 2: Code user-defined functions for H2CO3 b)HCO3 -,  c) CO3 -- with parameters pCO2, pH and temperature with default 20°C. (equations #5 and #6 of the  script)
+
+
+#Henry-constant
+fkH<-khLide
+
+#undissociated carbonic  acid concentration
+fH2CO3<- function(pCO2, Tx=20){
+  return(10^fkH(Tx)*pCO2) #yields mol per l of undissociated CO2
+}
+#once dissociated 
+fHCO3<- function(pCO2,Tx=20,H){
+  return((10^(-6.36+fkH(Tx))*pCO2)/H)
+}
+#twice dissociated
+fCO3<- function(pCO2,Tx=20,H){
+  return(10^(-16.69+fkH(Tx))*pCO2/H^2)
+}
+
+#Task 3: Calculate for pH values between 0 and 14 the fraction of the three carbonate-species (H2CO3, HCO3 -,  CO3 --) in the sum of the activity of the considered species. Plot this  distribution over pH with coloured lines and label the lines.
+Carbonatespecies<- #ph is the negative logarithm of the H+ activity in moles/l
+  tibble(pH=seq(0,14,by=0.25),H=10^-pH) %>% 
+  mutate(H2CO3=fH2CO3(pCO2=1),HCO3=fHCO3(pCO2=1,H=H),CO3=fCO3(pCO2=1,H=H),allSpec=(H2CO3+HCO3+CO3)) %>% 
+  pivot_longer(3:5,names_to="Species",values_to="activity")  %>%  
+  mutate(fraction = activity/allSpec) 
+
+Carbonatespecies %>% 
+  ggplot(.)+ 
+  geom_line(aes(x=pH,y=fraction,color=Species))
+
+# Task 4: rogram a function to calculate th pH-value of water in  equilibrium with dissoloved CO2. Neglect the second dissociation step (HCO3- to CO3--).
+fpH <- function(Tx = 0, pCO2 = 0)(-log10((10**-6.36*fH2CO3(Tx = Tx, pCO2 = pCO2))**(0.5)))
+
+# Plot water pH int the range of 0 to 30°C and pCO2 from 0 to 50kPa as a contour or iso-line plot (2D). Mark the biological neutral point, i.e. the pH of water in equilibrium with ambient CO2
+
+
+vTemps <- seq(1,30,1)
+vpCO2 <- seq(1,50,by=50/30)
+
+pHresults <- fpH(Tx = vTemps, pCO2 = vpCO2)
+
+xgrid <- seq(min(vTemps), max(vTemps), 0.3)
+ygrid <- seq(min(vpCO2), max(vpCO2), 0.3)
+
+
+data_fit <-  expand.grid(x = xgrid, y = ygrid)
+
+pHresults <- fpH(Tx = data_fit$x,
+                 pCO2 = data_fit$y)
+
+data_fit <- cbind(data_fit, z=pHresults)
+
+require(reshape2)
+
+data_fit <- melt(data_fit, id.vars = c("x","y"))
+
+
+plot <- data_fit %>% 
+  ggplot(., aes(x = y, y = x, z = value, fill=value)) +
+  geom_tile() +
+  stat_contour() +
+  xlab("pCO2 [kPa]") +
+  ylab("Temperature [°C]") + 
+  guides(fill = guide_colorbar(title = "pH"))
